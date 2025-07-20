@@ -1,14 +1,24 @@
-# Use an OpenJDK base image
-FROM openjdk:17-jdk-slim
+# Stage 1: Build the application
+FROM maven:3.9.6-eclipse-temurin-17 as builder
 
-# Set a working directory
 WORKDIR /app
 
-# Copy the built jar from the target folder to the image
-COPY target/zosh-food-0.0.1-SNAPSHOT.jar app.jar
+# Copy source code
+COPY . .
 
-# Expose the port your Spring Boot app runs on
-EXPOSE 5454
+# Package the application
+RUN mvn clean package -DskipTests
 
-# Run the jar file
+# Stage 2: Run the application
+FROM openjdk:17-jdk-slim
+
+WORKDIR /app
+
+# Copy the jar from the previous stage
+COPY --from=builder /app/target/*.jar app.jar
+
+# Expose the port
+EXPOSE 8080
+
+# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
